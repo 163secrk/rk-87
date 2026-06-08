@@ -216,9 +216,16 @@ const formData = reactive({
   report_detail: ''
 })
 
+function validateNumber(rule, value) {
+  if (value === null || value === undefined || value === '') {
+    return new Error(rule.message)
+  }
+  return true
+}
+
 const formRules = {
-  customer_id: { required: true, message: '请输入客户ID', trigger: 'blur' },
-  credit_score: { required: true, message: '请输入征信评分', trigger: 'blur' }
+  customer_id: { validator: validateNumber, message: '请输入客户ID', trigger: 'change' },
+  credit_score: { validator: validateNumber, message: '请输入征信评分', trigger: 'change' }
 }
 
 const columns = [

@@ -213,15 +213,29 @@ const formData = reactive({
   address: ''
 })
 
+function validateNumber(rule, value) {
+  if (value === null || value === undefined || value === '') {
+    return new Error(rule.message)
+  }
+  return true
+}
+
+function validateSelect(rule, value) {
+  if (!value || value === '') {
+    return new Error(rule.message)
+  }
+  return true
+}
+
 const formRules = {
   name: { required: true, message: '请输入客户姓名', trigger: 'blur' },
   gender: { required: true, message: '请选择性别', trigger: 'change' },
   id_card: { required: true, message: '请输入身份证号', trigger: 'blur' },
   phone: { required: true, message: '请输入手机号', trigger: 'blur' },
-  education: { required: true, message: '请选择学历', trigger: 'change' },
-  marital_status: { required: true, message: '请选择婚姻状况', trigger: 'change' },
-  monthly_income: { required: true, message: '请输入月收入', trigger: 'blur' },
-  work_years: { required: true, message: '请输入工作年限', trigger: 'blur' }
+  education: { validator: validateSelect, message: '请选择学历', trigger: 'change' },
+  marital_status: { validator: validateSelect, message: '请选择婚姻状况', trigger: 'change' },
+  monthly_income: { validator: validateNumber, message: '请输入月收入', trigger: 'change' },
+  work_years: { validator: validateNumber, message: '请输入工作年限', trigger: 'change' }
 }
 
 const riskLevelOptions = [
@@ -279,6 +293,12 @@ async function fetchData() {
   loading.value = true
   try {
     const params = { ...filterForm }
+    if (params.name || params.id_card || params.phone) {
+      params.keyword = params.name || params.id_card || params.phone
+    }
+    delete params.name
+    delete params.id_card
+    delete params.phone
     const res = await getCustomerList(params)
     tableData.value = res.data.items
     pagination.itemCount = res.data.total
