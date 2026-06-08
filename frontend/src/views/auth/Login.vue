@@ -114,6 +114,7 @@ async function handleLogin() {
     router.push(redirect)
   } catch (error) {
     console.error('Login failed:', error)
+    message.error(error.message || '登录失败，请检查用户名和密码')
   } finally {
     loading.value = false
   }

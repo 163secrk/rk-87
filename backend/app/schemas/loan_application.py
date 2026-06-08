@@ -2,6 +2,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from datetime import datetime
 from app.models.loan_application import LoanStatus, LoanType, RepaymentMethod
+from app.models.approval_record import ApprovalAction
 
 
 class LoanApplicationBase(BaseModel):
@@ -65,3 +66,8 @@ class LoanApplicationListResponse(LoanApplicationResponse):
     customer_name: Optional[str] = None
     customer_id_card: Optional[str] = None
     customer_phone: Optional[str] = None
+
+
+class ReviewRequest(BaseModel):
+    action: ApprovalAction = Field(..., description="审批动作")
+    comment: Optional[str] = Field("", description="审批意见")

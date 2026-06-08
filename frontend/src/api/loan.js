@@ -54,7 +54,7 @@ export function reviewLoan(id, action, comment) {
   return request({
     url: `/loan-applications/${id}/review`,
     method: 'post',
-    params: { action, comment }
+    data: { action, comment }
   })
 }
 

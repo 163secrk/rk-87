@@ -15,6 +15,7 @@ from app.schemas.loan_application import (
     LoanApplicationResponse,
     LoanApplicationListResponse,
     RiskAssessmentResult,
+    ReviewRequest,
 )
 from app.schemas.common import APIResponse, PaginatedResponse
 from app.services.approval_service import ApprovalService
@@ -177,19 +178,18 @@ async def create_loan_application(
 @router.post("/{application_id}/review", response_model=APIResponse[LoanApplicationResponse])
 async def review_application(
     application_id: int,
-    action: ApprovalAction,
-    comment: str = "",
+    review_data: ReviewRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    if action not in [ApprovalAction.APPROVE, ApprovalAction.REJECT, ApprovalAction.RETURN, ApprovalAction.CANCEL]:
+    if review_data.action not in [ApprovalAction.APPROVE, ApprovalAction.REJECT, ApprovalAction.RETURN, ApprovalAction.CANCEL]:
         raise HTTPException(status_code=400, detail="无效的审批动作")
 
     service = ApprovalService(db)
     application = await service.manual_review(
         application_id,
-        action,
-        comment,
+        review_data.action,
+        review_data.comment,
         current_user
     )
 
