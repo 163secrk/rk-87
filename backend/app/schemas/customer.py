@@ -1,6 +1,7 @@
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
+import re
 
 
 class CustomerBase(BaseModel):
@@ -22,6 +23,20 @@ class CustomerBase(BaseModel):
     has_house: Optional[bool] = Field(False, description="是否有房产")
     has_car: Optional[bool] = Field(False, description="是否有车产")
     remark: Optional[str] = Field(None, description="备注")
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if v and not re.match(r'^1[3-9]\d{9}$', v):
+            raise ValueError('手机号格式不正确，应为11位有效手机号')
+        return v
+
+    @field_validator('id_card')
+    @classmethod
+    def validate_id_card(cls, v):
+        if v and not re.match(r'(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)', v):
+            raise ValueError('身份证号格式不正确')
+        return v
 
 
 class CustomerCreate(CustomerBase):
@@ -47,11 +62,20 @@ class CustomerUpdate(BaseModel):
     has_car: Optional[bool] = None
     remark: Optional[str] = None
 
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if v is not None and not re.match(r'^1[3-9]\d{9}$', v):
+            raise ValueError('手机号格式不正确，应为11位有效手机号')
+        return v
+
 
 class CustomerResponse(CustomerBase):
     id: int
     credit_score: int
     risk_level: str
+    age: Optional[int] = None
+    is_blacklisted: bool = False
     created_at: datetime
     updated_at: Optional[datetime] = None
 

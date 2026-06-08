@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from datetime import datetime
 from app.core.database import get_db
 from app.core.security import get_current_active_user
@@ -18,42 +19,42 @@ router = APIRouter(prefix="/blacklist", tags=["黑名单"])
 async def get_blacklist(
     page: int = 1,
     page_size: int = 20,
-    keyword: str = None,
-    blacklist_type: str = None,
-    is_active: bool = None,
+    name: str = None,
+    id_card: str = None,
+    phone: str = None,
+    reason_type: str = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    query = select(Blacklist).outerjoin(Customer, Blacklist.customer_id == Customer.id).outerjoin(User, Blacklist.added_by == User.id)
+    query = select(Blacklist)
     count_query = select(func.count(Blacklist.id))
 
-    if keyword:
-        keyword_filter = (
-            Blacklist.name.contains(keyword) |
-            Blacklist.id_card.contains(keyword) |
-            Blacklist.phone.contains(keyword)
-        )
-        query = query.where(keyword_filter)
-        count_query = count_query.where(keyword_filter)
+    if name:
+        query = query.where(Blacklist.name.contains(name))
+        count_query = count_query.where(Blacklist.name.contains(name))
 
-    if blacklist_type:
-        query = query.where(Blacklist.blacklist_type == blacklist_type)
-        count_query = count_query.where(Blacklist.blacklist_type == blacklist_type)
+    if id_card:
+        query = query.where(Blacklist.id_card.contains(id_card))
+        count_query = count_query.where(Blacklist.id_card.contains(id_card))
 
-    if is_active is not None:
-        query = query.where(Blacklist.is_active == is_active)
-        count_query = count_query.where(Blacklist.is_active == is_active)
+    if phone:
+        query = query.where(Blacklist.phone.contains(phone))
+        count_query = count_query.where(Blacklist.phone.contains(phone))
+
+    if reason_type:
+        query = query.where(Blacklist.blacklist_type == reason_type)
+        count_query = count_query.where(Blacklist.blacklist_type == reason_type)
 
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
 
-    query = query.order_by(Blacklist.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    query = query.options(selectinload(Blacklist.added_by_user)).order_by(Blacklist.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)
     items = result.scalars().all()
 
     response_items = []
     for item in items:
-        item_dict = BlacklistResponse.model_validate(item).model_dump()
+        item_dict = item.__dict__.copy()
         item_dict["customer_name"] = item.name
         item_dict["reason_type"] = item.blacklist_type
         item_dict["reason_description"] = item.reason

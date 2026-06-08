@@ -227,11 +227,22 @@ function validateSelect(rule, value) {
   return true
 }
 
+function validatePhone(rule, value) {
+  if (!value || value === '') {
+    return new Error('请输入手机号')
+  }
+  const phoneReg = /^1[3-9]\d{9}$/
+  if (!phoneReg.test(value)) {
+    return new Error('请输入正确的手机号格式')
+  }
+  return true
+}
+
 const formRules = {
   name: { required: true, message: '请输入客户姓名', trigger: 'blur' },
   gender: { required: true, message: '请选择性别', trigger: 'change' },
   id_card: { required: true, message: '请输入身份证号', trigger: 'blur' },
-  phone: { required: true, message: '请输入手机号', trigger: 'blur' },
+  phone: { validator: validatePhone, trigger: 'blur' },
   education: { validator: validateSelect, message: '请选择学历', trigger: 'change' },
   marital_status: { validator: validateSelect, message: '请选择婚姻状况', trigger: 'change' },
   monthly_income: { validator: validateNumber, message: '请输入月收入', trigger: 'change' },

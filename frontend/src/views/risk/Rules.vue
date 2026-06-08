@@ -68,6 +68,11 @@
       >
         <n-row :gutter="20">
           <n-col :span="12">
+            <n-form-item label="规则编码" path="rule_code">
+              <n-input v-model:value="formData.rule_code" placeholder="请输入规则编码" />
+            </n-form-item>
+          </n-col>
+          <n-col :span="12">
             <n-form-item label="规则名称" path="rule_name">
               <n-input v-model:value="formData.rule_name" placeholder="请输入规则名称" />
             </n-form-item>
@@ -191,6 +196,7 @@ const pagination = reactive({
 })
 
 const formData = reactive({
+  rule_code: '',
   rule_name: '',
   condition_field: '',
   condition_operator: '',
@@ -202,8 +208,15 @@ const formData = reactive({
   description: ''
 })
 
+function validatePriority(rule, value) {
+  if (value === null || value === undefined || value === '') {
+    return new Error('请输入优先级')
+  }
+  return true
+}
+
 const isScoreAction = computed(() => {
-  return formData.action_type === 'SCORE_PLUS' || formData.action_type === 'SCORE_MINUS'
+  return formData.action_type === 'score_plus' || formData.action_type === 'score_minus'
 })
 
 const statusOptions = [
@@ -225,25 +238,26 @@ const conditionFieldOptions = [
 ]
 
 const operatorOptions = [
-  { label: 'GT', value: 'GT' },
-  { label: 'LT', value: 'LT' },
-  { label: 'GTE', value: 'GTE' },
-  { label: 'LTE', value: 'LTE' },
-  { label: 'EQ', value: 'EQ' },
-  { label: 'NEQ', value: 'NEQ' },
-  { label: 'CONTAINS', value: 'CONTAINS' },
-  { label: 'IN', value: 'IN' }
+  { label: 'GT', value: 'gt' },
+  { label: 'LT', value: 'lt' },
+  { label: 'GTE', value: 'gte' },
+  { label: 'LTE', value: 'lte' },
+  { label: 'EQ', value: 'eq' },
+  { label: 'NEQ', value: 'neq' },
+  { label: 'CONTAINS', value: 'contains' },
+  { label: 'IN', value: 'in' }
 ]
 
 const actionTypeOptions = [
-  { label: 'SCORE_PLUS', value: 'SCORE_PLUS' },
-  { label: 'SCORE_MINUS', value: 'SCORE_MINUS' },
-  { label: 'AUTO_APPROVE', value: 'AUTO_APPROVE' },
-  { label: 'AUTO_REJECT', value: 'AUTO_REJECT' },
-  { label: 'MANUAL_REVIEW', value: 'MANUAL_REVIEW' }
+  { label: 'SCORE_PLUS', value: 'score_plus' },
+  { label: 'SCORE_MINUS', value: 'score_minus' },
+  { label: 'AUTO_APPROVE', value: 'auto_approve' },
+  { label: 'AUTO_REJECT', value: 'auto_reject' },
+  { label: 'MANUAL_REVIEW', value: 'manual_review' }
 ]
 
 const formRules = {
+  rule_code: { required: true, message: '请输入规则编码', trigger: 'blur' },
   rule_name: { required: true, message: '请输入规则名称', trigger: 'blur' },
   condition_field: { required: true, message: '请选择条件字段', trigger: 'change' },
   condition_operator: { required: true, message: '请选择条件运算符', trigger: 'change' },
@@ -260,26 +274,27 @@ const formRules = {
       trigger: 'blur'
     }
   ],
-  priority: { required: true, message: '请输入优先级', trigger: 'blur' },
+  priority: { validator: validatePriority, trigger: 'blur' },
   status: { required: true, message: '请选择状态', trigger: 'change' }
 }
 
 const columns = [
   { title: 'ID', key: 'id', width: 70 },
+  { title: '规则编码', key: 'rule_code', width: 120, ellipsis: true },
   { title: '规则名称', key: 'rule_name', width: 140, ellipsis: true },
   { title: '条件字段', key: 'condition_field', width: 130 },
   { title: '条件运算符', key: 'condition_operator', width: 120 },
   { title: '条件值', key: 'condition_value', width: 100 },
-  { title: '动作类型', key: 'action_type', width: 140 },
+  { title: '动作类型', key: 'action', width: 140 },
   { title: '动作值', key: 'action_value', width: 90 },
   {
     title: '状态',
-    key: 'status',
+    key: 'is_enabled',
     width: 90,
     render: (row) => h(
       'n-tag',
-      { type: row.status === 'active' ? 'success' : 'default', size: 'small' },
-      { default: () => row.status === 'active' ? '启用' : '禁用' }
+      { type: row.is_enabled ? 'success' : 'default', size: 'small' },
+      { default: () => row.is_enabled ? '启用' : '禁用' }
     )
   },
   { title: '优先级', key: 'priority', width: 80 },
@@ -298,10 +313,10 @@ const columns = [
       h('n-button', { size: 'small', type: 'error', onClick: () => handleDelete(row.id), style: { marginLeft: '8px' } }, { default: () => '删除' }),
       h('n-button', {
         size: 'small',
-        type: row.status === 'active' ? 'warning' : 'success',
-        onClick: () => handleToggle(row.id),
+        type: row.is_enabled ? 'warning' : 'success',
+        onClick: () => handleToggle(row),
         style: { marginLeft: '8px' }
-      }, { default: () => row.status === 'active' ? '禁用' : '启用' })
+      }, { default: () => row.is_enabled ? '禁用' : '启用' })
     ]
   }
 ]
@@ -345,6 +360,7 @@ function showCreateModal() {
   modalTitle.value = '新增规则'
   editingId.value = null
   Object.assign(formData, {
+    rule_code: '',
     rule_name: '',
     condition_field: '',
     condition_operator: '',
@@ -362,14 +378,15 @@ function showEditModal(row) {
   modalTitle.value = '编辑规则'
   editingId.value = row.id
   Object.assign(formData, {
+    rule_code: row.rule_code,
     rule_name: row.rule_name,
     condition_field: row.condition_field,
     condition_operator: row.condition_operator,
     condition_value: row.condition_value,
-    action_type: row.action_type,
+    action_type: row.action,
     action_value: row.action_value,
     priority: row.priority,
-    status: row.status,
+    status: row.is_enabled ? 'active' : 'inactive',
     description: row.description || ''
   })
   showModal.value = true
@@ -386,11 +403,19 @@ async function handleSubmit() {
     await formRef.value?.validate()
     submitLoading.value = true
 
+    const submitData = {
+      ...formData,
+      action: formData.action_type,
+      is_enabled: formData.status === 'active'
+    }
+    delete submitData.action_type
+    delete submitData.status
+
     if (editingId.value) {
-      await updateRiskRule(editingId.value, formData)
+      await updateRiskRule(editingId.value, submitData)
       message.success('更新成功')
     } else {
-      await createRiskRule(formData)
+      await createRiskRule(submitData)
       message.success('创建成功')
     }
 
@@ -421,9 +446,9 @@ async function handleDelete(id) {
   })
 }
 
-async function handleToggle(id) {
+async function handleToggle(row) {
   try {
-    await toggleRiskRule(id)
+    await updateRiskRule(row.id, { is_enabled: !row.is_enabled })
     message.success('状态切换成功')
     fetchData()
   } catch (error) {

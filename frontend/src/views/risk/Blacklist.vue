@@ -80,6 +80,7 @@
             :loading="customerLoading"
             :on-search="handleCustomerSearch"
             filterable
+            remote
             placeholder="请搜索客户"
             clearable
           />
@@ -221,6 +222,7 @@ async function fetchData() {
     pagination.pageSize = filterForm.page_size
   } catch (error) {
     console.error('Failed to fetch blacklist:', error)
+    message.error('加载黑名单数据失败')
   } finally {
     loading.value = false
   }

@@ -2,10 +2,12 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from datetime import date
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models.user import User, UserRole
 from app.models.customer import Customer
+from app.models.blacklist import Blacklist
 from app.schemas.customer import CustomerCreate, CustomerUpdate, CustomerResponse
 from app.schemas.common import APIResponse, PaginatedResponse
 
@@ -57,6 +59,16 @@ async def get_customers(
     )
 
 
+def calculate_age(birth_date):
+    if not birth_date:
+        return None
+    today = date.today()
+    age = today.year - birth_date.year
+    if today.month < birth_date.month or (today.month == birth_date.month and today.day < birth_date.day):
+        age -= 1
+    return age
+
+
 @router.get("/{customer_id}", response_model=APIResponse[CustomerResponse])
 async def get_customer(
     customer_id: int,
@@ -67,7 +79,20 @@ async def get_customer(
     customer = result.scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="客户不存在")
-    return APIResponse(code=200, message="success", data=CustomerResponse.model_validate(customer))
+
+    blacklist_result = await db.execute(
+        select(Blacklist).where(
+            Blacklist.id_card == customer.id_card,
+            Blacklist.is_active == True
+        )
+    )
+    is_blacklisted = blacklist_result.scalar_one_or_none() is not None
+
+    customer_data = CustomerResponse.model_validate(customer).model_dump()
+    customer_data["age"] = calculate_age(customer.birth_date)
+    customer_data["is_blacklisted"] = is_blacklisted
+
+    return APIResponse(code=200, message="success", data=CustomerResponse(**customer_data))
 
 
 @router.post("", response_model=APIResponse[CustomerResponse])

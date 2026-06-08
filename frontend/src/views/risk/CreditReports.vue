@@ -65,6 +65,7 @@
                 :loading="customerLoading"
                 :on-search="handleCustomerSearch"
                 filterable
+                remote
                 placeholder="请搜索客户"
                 clearable
                 style="width: 100%"
