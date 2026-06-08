@@ -58,7 +58,7 @@ import { useUserStore } from '@/stores/user'
 import { setMessageInstance } from '@/utils/request'
 import { getRoleText } from '@/utils'
 import {
-  Dashboard,
+  Grid,
   People,
   FileTrayFull,
   Settings,
@@ -90,7 +90,7 @@ const menuOptions = computed(() => {
     {
       label: '仪表盘',
       key: 'Dashboard',
-      icon: () => h(Dashboard)
+      icon: () => h(Grid)
     },
     {
       label: '客户管理',
