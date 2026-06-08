@@ -58,11 +58,15 @@
       >
         <n-row :gutter="20">
           <n-col :span="12">
-            <n-form-item label="客户ID" path="customer_id">
-              <n-input-number
+            <n-form-item label="客户" path="customer_id">
+              <n-select
                 v-model:value="formData.customer_id"
-                placeholder="请输入客户ID"
-                :min="1"
+                :options="customerOptions"
+                :loading="customerLoading"
+                :on-search="handleCustomerSearch"
+                filterable
+                placeholder="请搜索客户"
+                clearable
                 style="width: 100%"
               />
             </n-form-item>
@@ -179,17 +183,20 @@ import { ref, reactive, onMounted, h } from 'vue'
 import { useMessage } from 'naive-ui'
 import { Add } from '@vicons/ionicons5'
 import { getCreditReportList, createCreditReport } from '@/api/risk'
+import { getCustomerList } from '@/api/customer'
 import { formatDate } from '@/utils'
 
 const message = useMessage()
 
 const loading = ref(false)
 const submitLoading = ref(false)
+const customerLoading = ref(false)
 const showCreateModalFlag = ref(false)
 const showDetailModal = ref(false)
 const formRef = ref(null)
 
 const tableData = ref([])
+const customerOptions = ref([])
 const detailData = reactive({})
 
 const filterForm = reactive({
@@ -224,7 +231,7 @@ function validateNumber(rule, value) {
 }
 
 const formRules = {
-  customer_id: { validator: validateNumber, message: '请输入客户ID', trigger: 'change' },
+  customer_id: { required: true, message: '请选择客户', trigger: 'change' },
   credit_score: { validator: validateNumber, message: '请输入征信评分', trigger: 'change' }
 }
 
@@ -299,7 +306,27 @@ function showCreateModal() {
     query_count: null,
     report_detail: ''
   })
+  customerOptions.value = []
   showCreateModalFlag.value = true
+}
+
+async function handleCustomerSearch(query) {
+  if (!query) {
+    customerOptions.value = []
+    return
+  }
+  customerLoading.value = true
+  try {
+    const res = await getCustomerList({ keyword: query, page_size: 20 })
+    customerOptions.value = res.data.items.map((item) => ({
+      label: `${item.name} - ${item.id_card}`,
+      value: item.id
+    }))
+  } catch (error) {
+    console.error('Failed to search customers:', error)
+  } finally {
+    customerLoading.value = false
+  }
 }
 
 async function handleSubmit() {
@@ -307,7 +334,15 @@ async function handleSubmit() {
     await formRef.value?.validate()
     submitLoading.value = true
 
-    await createCreditReport(formData)
+    const submitData = {
+      customer_id: formData.customer_id,
+      credit_score: formData.credit_score,
+      total_loan_amount: formData.total_debt,
+      overdue_count: formData.overdue_count || 0,
+      query_count_last_30d: formData.query_count,
+      report_data: formData.report_detail
+    }
+    await createCreditReport(submitData)
     message.success('创建成功')
 
     showCreateModalFlag.value = false

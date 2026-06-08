@@ -33,6 +33,8 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
+    name: Optional[str] = None
+    status: Optional[str] = None
 
     class Config:
         from_attributes = True

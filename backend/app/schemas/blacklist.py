@@ -35,6 +35,10 @@ class BlacklistResponse(BlacklistBase):
     added_at: datetime
     removed_by: Optional[int] = None
     removed_at: Optional[datetime] = None
+    customer_name: Optional[str] = None
+    operator_name: Optional[str] = None
+    reason_type: Optional[str] = None
+    reason_description: Optional[str] = None
 
     class Config:
         from_attributes = True

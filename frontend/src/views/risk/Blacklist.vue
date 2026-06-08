@@ -280,7 +280,12 @@ async function handleSubmit() {
     await formRef.value?.validate()
     submitLoading.value = true
 
-    await addToBlacklist(formData)
+    const submitData = {
+      customer_id: formData.customer_id,
+      blacklist_type: formData.reason_type,
+      reason: formData.reason_description
+    }
+    await addToBlacklist(submitData)
     message.success('加入黑名单成功')
 
     showModal.value = false
